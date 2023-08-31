@@ -73,17 +73,17 @@ export class TelegramBotService implements OnModuleInit {
       text = `Here is a list of repositories whose releases we are monitoring:\n\n`
       text += repos.map(repo => `[${repo.owner}/${repo.name} v${repo.tag_name}](https://github.com/${repo.owner}/${repo.name}/releases/tag/${repo.tag_name})`).join('\n')
     }
-    return await this.bot.sendMessage(message.chat.id, text, { reply_to_message_id: message.message_id });
+    return await this.bot.sendMessage(message.chat.id, text, { reply_to_message_id: message.message_id, parse_mode: 'Markdown' });
   }
 
   async onGitHubAdd(message: TelegramBot.Message) {
     const [owner, name, ..._] = message.text.replace('/github add', '').replace('https://github.com/', '').trim().split('/');
     const release = await this.githubReleaseService.getReleaseInfo(message.message_id.toString(), owner, name);
-    const text = 'Repo not found!';
+    const text = 'Release not found!';
 
     if ((release?.status ?? 404) != 404) {
       const repo = await this.githubRepositoryService.addMonitor(owner, name, message.chat.id);
-      await this.githubReleaseService.updateRepo(message.message_id.toString(), repo);
+      return await this.githubReleaseService.updateRepo(message.message_id.toString(), repo);
     }
 
     return await this.bot.sendMessage(message.chat.id, text, { reply_to_message_id: message.message_id });
