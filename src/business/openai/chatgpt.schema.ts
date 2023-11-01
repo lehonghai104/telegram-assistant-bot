@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
-import { ChatCompletionRequestMessageRoleEnum } from 'openai';
 
 export type ChatGPTDocument = HydratedDocument<ChatGPT>;
 
@@ -16,7 +15,7 @@ export class ChatGPT {
   message_id: number;
 
   @Prop({ type: 'string' })
-  role: ChatCompletionRequestMessageRoleEnum;
+  role: 'system' | 'user' | 'assistant' | 'function';
 
   @Prop()
   content: string;

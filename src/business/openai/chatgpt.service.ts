@@ -1,25 +1,25 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
-import { ChatCompletionRequestMessage, Configuration, OpenAIApi } from 'openai';
 import { ChatGPT } from './chatgpt.schema';
 import { Model } from 'mongoose';
 import TelegramBot from 'node-telegram-bot-api';
+import OpenAI from 'openai';
+import { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
 @Injectable()
 export class ChatGPTService {
   private logger = new Logger(this.constructor.name);
-  private openai: OpenAIApi;
+  private openai: OpenAI;
 
   constructor(
     @InjectModel(ChatGPT.name)
     private model: Model<ChatGPT>,
     configService: ConfigService,
   ) {
-    const configuration = new Configuration({
+    this.openai = new OpenAI({
       apiKey: configService.getOrThrow('OPENAI_API_KEY'),
     });
-    this.openai = new OpenAIApi(configuration);
   }
 
   async ask(question: TelegramBot.Message, bot: TelegramBot) {
@@ -35,17 +35,17 @@ export class ChatGPTService {
       conversation_id: conversation_message?.conversation_id ?? message_id
     });
 
-    const messages: ChatCompletionRequestMessage[] = (await this.find_conversations(conversation_id))
+    const messages: ChatCompletionMessageParam[] = (await this.find_conversations(conversation_id))
       .map(({ role, content }) => ({ role, content }));
 
     let response = '';
     try {
-      const completion = await this.openai.createChatCompletion({
+      const completion = await this.openai.chat.completions.create({
         model: 'gpt-3.5-turbo',
-        temperature: 0.4,
+        temperature: 0.3,
         messages,
       });
-      const choice = completion.data.choices?.[0];
+      const choice = completion.choices?.[0];
       response = choice.message.content;
       if (response) {
         const res = await bot.sendMessage(
